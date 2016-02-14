@@ -1,0 +1,2091 @@
+10       .OPT OBJ
+20 ; WARZONE
+30 ;
+40 ; BY ROLAND TEAGUE AND HAYDEN TEAGUE
+50 ;
+60 ; GPLv3
+65       *=  $3500
+66 DISPBUF = $7000
+67 DISPLAYPTR = $B0
+68 DISPBUFPTR = $B2
+70 CHORG =   $E000
+80 CHDEST =  $8C00
+90 CHBAS =   $02F4
+91 KBCODE =  $D209
+92 VKEYBD =  $0208
+93 CONSOL =  $D01F
+94 CH    =   $02FC
+95 RAMTOP =  $6A
+96 EOD   =   $9B
+99 ; ***** DLI REGISTERS AND INTIALIZATION *****
+0100 SDMCTL = $022F
+0101 SDLSTL = $0230
+0102 SDLSTH = $0231
+0103 HSCROL = $D404
+0104 VSCROL = $D405
+0105 VVBLKI = $0222
+0106 VVBLKD = $0224
+0107 SYSVBV = $E45F
+0108 SETVBV = $E45C
+0109 XITVBV = $E462
+0110 RANDOM = $D02A
+0111 CSCROLH = $0600
+0112 FSCROLH = CSCROLH+1
+0113 CSCROLV = FSCROLH+1
+0114 FSCROLV = CSCROLV+1
+0115 COLOR0 = 708
+0116 COLOR1 = 709
+0117 COLOR2 = 710
+0118 COLOR3 = 711
+0119 COLOR4 = 712
+0120 LINEBUF .DS 40
+0121 ; ***** PLAYER MISSLE REGISTERS AND INITIALIZATION ****
+0122 PMBASE = $D407
+0123 GRACTL = $D01D
+0124 GPRIOR = $026F
+0125 HPOSM0 = $D004
+0126 HPOSM2 = $D006
+0127 SIZEP0 = $D008
+0128 SIZEP1 = $D009
+0129 SIZEP3 = $D00A
+0130 SIZEP4 = $D00B
+0131 HPOSP0 = $D000
+0132 HPOSP1 = $D001
+0133 HPOSP2 = $D002
+0134 HPOSP3 = $D003
+0135 STICK0 = $0278
+0136 PACTL = $D302
+0137 STRIG0 = $0284
+0138 REMBAS = FSCROLV+1
+0139 PLBOFS = REMBAS+2
+0140 TABSIZ = PLBOFS+2
+0141 ACTIVE = TABSIZ+2
+0142 VRTPTR = ACTIVE+1
+0143 EXCOUNT4 = VRTPTR+1
+0144 TEMP =  EXCOUNT4+1
+0145 LENGTH = TEMP+1
+0146 TABPTR = $D8
+0147 SHAPE = TABPTR+2
+0148 PCOLR0 = $02C0
+0149 PCOLR1 = $02C1
+0150 HITCLR = $D01E
+0151 M0PL =  $D008
+0152 M1PL =  $D009
+0153 M2PL =  $D00A
+0154 M3PL =  $D00B
+0155 P0PL =  $D00C
+0156 P1PL =  $D00D
+0157 P2PL =  $D00E
+0158 P3PL =  $D00F
+0159 M1PF =  $D001
+0160 PCOLR2 = $02C2
+0161 PCOLR3 = $02C3
+0162 LINEPTR = LENGTH+1
+0163 MPR =   LINEPTR+1
+0164 MPD =   MPR+1
+0165 LVLOVER = MPD+1
+0166 LEVEL = LVLOVER+1
+0167 L1SPEED = LEVEL+1
+0168 SPEEDCNTP2 = L1SPEED+1
+0169 MVP2 =  SPEEDCNTP2+1
+0170 PAUSE = MVP2+1
+0171 L2SPEED = PAUSE+1
+0172 MAXLVL = L2SPEED+1
+0173 GAME =  MAXLVL+1
+0174 KILL0 = GAME+1
+0175 KILL2 = KILL0+1
+0176 EXCOUNT = KILL2+1
+0177 MASK0 = EXCOUNT+1
+0178 MASK1 = MASK0+1
+0179 MLBOFS = MASK1+1
+0180 MASK =  MLBOFS+2
+0181 M0FLAG = MASK+1
+0182 M2FLAG = M0FLAG+1
+0183 M3FLAG = M2FLAG+1
+0184 MVP3 =  M3FLAG+1
+0185 SPEEDCNTP3 = MVP3+1
+0186 SPEEDCNTML = SPEEDCNTP3+1
+0187 L3SPEED = SPEEDCNTML+1
+0188 L4SPEED = L3SPEED+1
+0189 MVML =  L4SPEED+1
+0190 MASK2 = MVML+1
+0191 MASK3 = MASK2+1
+0192 KILL3 = MASK3+1
+0193 SHPNUMBER = KILL3+1
+0194 EXCOUNT0 = SHPNUMBER+1
+0195 EXCOUNT1 = EXCOUNT0+1
+0196 EXCOUNT2 = EXCOUNT1+1
+0197 EXCOUNT3 = EXCOUNT2+1
+0198 SCORE0 = EXCOUNT3+1
+0199 SCORE1 = SCORE0+1
+0200 SCORE2 = SCORE1+1
+0201 RESETLVL = SCORE2+1
+0202 LIVES = RESETLVL+1
+0203 IGNORE2 = LIVES+1
+0204 IGNORE3 = IGNORE2+1
+0205 SBANG = IGNORE3+1
+0206 AUDF1 = $D200
+0207 AUDC1 = $D201
+0208 AUDF2 = $D202
+0209 AUDC2 = $D203
+0400 ; ***** MAIN ROUTINE *****
+0405 BEGIN
+0410     LDA #202
+0415     STA COLOR4
+0420     LDA #2
+0425     STA COLOR0
+0430     LDA #8
+0435     STA COLOR1
+0440     LDA #12
+0445     STA COLOR2
+0450     LDA #196
+0455     STA COLOR3
+0460     JSR NEWCHSET
+0465     JSR COPYSCR
+0470     JSR TITLE
+0475     LDA $FC
+0480     STA MASK0
+0485     LDA $CF
+0490     STA MASK2
+0495     LDA $C0
+0500     STA MASK3
+0505 START
+0510     LDA #$05
+0515     STA MAXLVL
+0520     LDA #$00
+0522     STA SBANG
+0525     STA M0FLAG
+0530     STA M2FLAG
+0535     STA M3FLAG
+0540     STA KILL0
+0545     STA KILL2
+0550     STA KILL3
+0555     STA EXCOUNT
+0560     STA EXCOUNT0
+0565     STA EXCOUNT1
+0570     STA EXCOUNT2
+0575     STA EXCOUNT3
+0580     STA SHPNUMBER
+0585     STA SCORE0
+0590     STA SCORE1
+0595     STA SCORE2
+0600     STA RESETLVL
+0605     STA MVP2
+0610     STA MVP3
+0615     STA PAUSE
+0620     STA LVLOVER
+0625     STA GAME
+0626     STA IGNORE2
+0627     STA IGNORE3
+0628     STA EXCOUNT4
+0630     LDA #3
+0635     STA LIVES
+0636     STA HITCLR
+0640     LDA LIVES
+0645     CLC 
+0650     ADC #16
+0655     STA SCL+13
+0660     LDA SCORE2
+0665     CLC 
+0670     ADC #16
+0675     STA SCL+35
+0680     LDA SCORE1
+0685     CLC 
+0690     ADC #16
+0695     STA SCL+36
+0700     LDA SCORE0
+0705     CLC 
+0710     ADC #16
+0715     STA SCL+37
+0720     LDA #$01
+0725     STA SPEEDCNTP3
+0730     STA LEVEL
+0735     STA SPEEDCNTP2
+0740     LDA #7
+0745     STA L1SPEED
+0750     LDA #5
+0755     STA L2SPEED
+0760     LDA #3
+0765     STA L3SPEED
+0770     LDA #2
+0775     STA L4SPEED
+0780     LDA #$06
+0785     CMP CONSOL  ; START PRESSED?
+0790     BEQ AC1
+0795     JMP START
+0800     LDA #$07
+0805 AC1 CMP CONSOL  ; RELEASED?
+0810     BNE AC1
+0825     JSR SCREEN
+0830     JSR PMGINT
+0835 INFIN
+0840     LDA LIVES
+0845     CMP #0
+0850     BNE AC
+0852     JMP AC3
+0855 AC  LDA #1
+0860     CMP LVLOVER
+0865     BEQ NXTLVL
+0880     LDA #$05
+0885     CMP CONSOL  ; SELECT PRESSED?
+0890     BNE INFIN
+0895     LDA #$07
+0900 AC2
+0905     CMP CONSOL  ; RELEASED?
+0910     BNE AC2
+0915     LDA #0
+0920     STA GRACTL
+0925     JSR PMADR
+0930     JSR BLKFIL
+0935     JSR MLADR
+0940     JSR BLKFIL
+0945     JSR RESTORESCR
+0950     JSR TITLE
+0955     JMP START
+0960 NXTLVL
+0965     INC LEVEL
+0970     LDA LEVEL
+0975     CMP MAXLVL
+0980     BEQ AC3
+0985     BCS AC3
+0990     LDA #0
+0992     STA GRACTL
+0994     CLC 
+0995     LDA REMBAS+1
+0996     ADC #2
+0997     STA PLBOFS+1
+0998     LDA #0
+0999     STA PLBOFS
+1000     JSR PMADR
+1005     JSR BLKFIL
+1010     JSR MLADR
+1015     JSR BLKFIL
+1020     JSR LEVELSCR
+1025 LK1 LDA CH
+1030     CMP #$FF
+1035     BEQ LK1
+1040     LDA #$FF
+1045     STA CH
+1050     LDA #$01
+1055     STA SPEEDCNTP3
+1060     STA SPEEDCNTP2
+1065     LDA #0
+1070     STA LVLOVER
+1075     JSR SCREEN
+1080     JSR PMGINT
+1085     JMP INFIN
+1090 AC3 LDA #0
+1095     STA GRACTL
+1100     JSR PMADR
+1105     JSR BLKFIL
+1110     JSR MLADR
+1115     JSR BLKFIL
+1120     JSR GAMEOVERSCR
+1125     LDA #0
+1130     STA LVLOVER
+1135     STA RESETLVL
+1140     LDA #3
+1145     STA LIVES
+1150     LDA #1
+1155     STA GAME
+1160     JMP INFIN
+1390 ; ***** PLAYER MISSILE GRAPHICS ROUTINES *****
+1400 PMGINT
+1405     LDA #20
+1410     STA PCOLR2
+1415     LDA #228
+1420     STA PCOLR3
+1505     LDA #128
+1510     STA PCOLR0
+1515     LDA #0
+1520     STA PCOLR1
+1525     LDX #0
+1530 LOOPI
+1535     LDA VPOSITION,X
+1540     STA Y0,X
+1545     LDA HPOSITION,X
+1550     STA X0,X
+1555     STA HPOSP0,X
+1560     LDA #0
+1565     STA SIZEP0,X
+1570     INX 
+1575     CPX #8
+1580     BCC LOOPI
+1595     LDA #0
+1605     STA REMBAS
+1610     STA REMBAS+1
+1615     STA PLBOFS
+1620     SEC 
+1625     LDA RAMTOP
+1630     SBC #8
+1635     STA PMBASE
+1640     STA REMBAS+1
+1643     STA PLBOFS+1
+1644     SEC 
+1645     LDA RAMTOP
+1646     SBC #7
+1647     STA MLBOFS+1
+1648     LDA #128
+1649     STA MLBOFS
+1650     LDA # <1024
+1655     STA TABSIZ
+1660     LDA # >1024
+1665     STA TABSIZ+1
+1670     LDA #46
+1675     STA SDMCTL
+1680     LDA #3
+1685     STA GRACTL
+1690     LDA #1
+1695     STA GPRIOR
+1700     JSR PMADR
+1705     JSR BLKFIL
+1706     JSR MLADR
+1707     JSR BLKFIL
+1760     LDY # <INTRPT
+1765     LDX # >INTRPT
+1770     LDA #7
+1775     JSR SETVBV
+1780 INTRPT
+1785     LDA # <MOVEPL
+1790     STA VVBLKD
+1795     LDA # >MOVEPL
+1800     STA VVBLKD+1
+1805     RTS 
+1810 PMADR
+1815     LDA PLBOFS
+1820     STA TABPTR
+1825     LDA PLBOFS+1
+1830     STA TABPTR+1
+1835     RTS 
+1840 BLKFIL
+1845     LDA #0
+1850     LDX TABSIZ+1
+1855     BEQ PARTPG
+1860     LDY #0
+1865 FULLPG
+1870     STA (TABPTR),Y
+1875     INY 
+1880     BNE FULLPG
+1885     INC TABPTR+1
+1890     DEX 
+1895     BNE FULLPG
+1900 PARTPG
+1905     LDX TABSIZ
+1910     BEQ DONE
+1915     LDY #0
+1920 PARTLP
+1925     STA (TABPTR),Y
+1930     INY 
+1935     DEX 
+1940     BNE PARTLP
+1945 DONE
+1950     RTS 
+1960 DRAWPL
+1965     STY TEMP
+1970     CLC 
+1975     LDA TABPTR
+1980     ADC VRTPTR
+1985     STA TABPTR
+1990     LDY #0
+1995 FILLPL
+2000     LDA (SHAPE),Y
+2005     STA (TABPTR),Y
+2010     INY 
+2015     CPY LENGTH
+2020     BCC FILLPL
+2080     LDY TEMP
+2085     RTS 
+2090 INCPM
+2095     CLC 
+2100     LDA PLBOFS
+2105     ADC #128
+2110     STA PLBOFS
+2115     BCC PASS
+2120     INC PLBOFS+1
+2125 PASS
+2130     JSR PMADR
+2135     RTS 
+2140 GETPM
+2145     LDA PMGSHP,Y
+2150     STA SHAPE
+2155     LDA PMGSHP+1,Y
+2160     STA SHAPE+1
+2165     LDA PMLEN,X
+2170     STA LENGTH
+2175     LDA Y0,X
+2180     STA VRTPTR
+2185     RTS 
+2195 MOVEPL
+2200     LDA #1
+2201     CMP KILL0
+2202     BNE PC0
+2203     JMP RETURNVBV
+2205 PC0 CMP LVLOVER
+2210     BNE PC1
+2215     JMP RETURNVBV
+2220 PC1 JSR PAUSEI
+2225     LDA PAUSE
+2230     CMP #$01
+2235     BNE NP
+2240     JMP RETURNVBV
+2245 NP  CLC 
+2250     LDA REMBAS+1
+2255     ADC #2
+2260     STA PLBOFS+1
+2265     LDA #0
+2270     STA PLBOFS
+2275     JSR PMADR
+2280     LDX #0
+2285     LDY #0
+2325     LDA STICK0
+2330     STA DIRECTION,X
+2335     STA DIRECTION+1,X
+2340 REPEAT
+2345     LDY SHPINDEX,X
+2350     JSR GETPM
+2355     LDA #4
+2360     ORA PACTL
+2365     LDA DIRECTION,X
+2370     CMP #$0F
+2375     BNE RIGHT
+2380     JSR DRAWPL
+2385     JMP END
+2395 RIGHT
+2400     CMP #$07
+2405     BNE LEFT
+2410     CPX #2
+2415     BCS SKIP1
+2420     INY 
+2425     INY 
+2430     INY 
+2435     INY 
+2440     JSR GETPM
+2445     JSR DRAWPL
+2450 SKIP1
+2455     LDA X0,X
+2460     CMP #200
+2465     BCS END
+2470     INC X0,X
+2475     LDA X0,X
+2480     STA HPOSP0,X
+2485     JMP END
+2490 LEFT
+2495     CMP #$0B
+2500     BNE UP
+2505     CPX #2
+2510     BCS SKIP2
+2515     INY 
+2520     INY 
+2525     JSR GETPM
+2530     JSR DRAWPL
+2535 SKIP2
+2540     LDA X0,X
+2545     CMP #45
+2550     BEQ END
+2555     BCC END
+2560     DEC X0,X
+2565     LDA X0,X
+2570     STA HPOSP0,X
+2575     JMP END
+2580 UP
+2585     CMP #$0E
+2590     BNE DOWN
+2595     DEC VRTPTR
+2600     LDA VRTPTR
+2605     CMP #10
+2610     BEQ END
+2615     BCC END
+2620     STA Y0,X
+2625     JSR DRAWPL
+2630     JMP END
+2635 DOWN
+2640     CMP #$0D
+2645     BNE END
+2650     INC VRTPTR
+2655     LDA VRTPTR
+2660     CMP #90
+2665     BCS END
+2670     STA Y0,X
+2675     JSR DRAWPL
+2680 END
+2685     INX 
+2690     CPX #2
+2695     BCS MVPL2
+2700     JSR INCPM
+2705     JMP REPEAT
+2710 MVPL2
+2730     JSR CHECKLVL
+2735     LDA #1
+2740     CMP MVP2
+2745     BNE MVPL2END
+2750     JSR INCPM
+2755     LDA #1
+2760     CMP KILL2
+2765     BEQ MVPL3
+2770     LDY SHPINDEX,X
+2775     JSR GETPM
+2780     LDA X0,X
+2785     CMP #5
+2790     BEQ RESETPLPOS
+2795     BCC RESETPLPOS
+2800     DEC X0,X
+2805     LDA X0,X
+2810     STA HPOSP0,X
+2815     INC VRTPTR
+2820     LDA VRTPTR
+2825     CMP #100
+2830     BCS RESETPLPOS
+2835     STA Y0,X
+2840     JSR DRAWPL
+2845     JMP MVPL2END
+2850 RESETPLPOS
+2855     LDA VPOSITION,X
+2860     STA Y0,X
+2865     LDA HPOSITION,X
+2870     STA X0,X
+2875     STA HPOSP0,X
+2880     JSR BLKFIL
+2885     JSR DRAWPL
+2890 MVPL2END
+2895     NOP 
+2900 MVPL3
+2905     LDA LEVEL
+2910     CMP #2
+2915     BCS PL30
+2920     JMP MVPL3END
+2925 PL30
+2930     LDA #1
+2935     CMP MVP3
+2940     BNE MVPL3END
+2945     CMP MVP2
+2950     BEQ PL31
+2955     JSR INCPM
+2960 PL31
+2965     JSR INCPM
+2970     LDA #1
+2975     CMP KILL3
+2980     BEQ MOVEML
+2985     LDX #3
+2990     LDY SHPINDEX,X
+2995     JSR GETPM
+3000     LDA X0,X
+3005     CMP #225
+3010     BEQ RESETPL3POS
+3015     BCS RESETPL3POS
+3020     INC X0,X
+3025     LDA X0,X
+3030     STA HPOSP0,X
+3035     INC VRTPTR
+3040     LDA VRTPTR
+3045     CMP #100
+3050     BCS RESETPL3POS
+3055     STA Y0,X
+3060     JSR DRAWPL
+3065     JMP MVPL3END
+3070 RESETPL3POS
+3075     LDA VPOSITION,X
+3080     STA Y0,X
+3085     LDA HPOSITION,X
+3090     STA X0,X
+3095     STA HPOSP0,X
+3100     JSR BLKFIL
+3105     JSR DRAWPL
+3110 MVPL3END
+3115 ; FIRE AND MOVE MISSILE
+3120 MOVEML
+3125     LDA #$00
+3130     JSR MLMV
+3135     LDA #$01
+3140     JSR MLMV
+3145     LDA LEVEL
+3150     CMP #2
+3155     BCS MM3
+3160     JMP RETURNVBV
+3165 MM3 LDA #$02
+3170     JSR MLMV
+3175     JMP RETURNVBV
+3180 MLMV
+3185     CMP #$00
+3190     BEQ ML0
+3195     CMP #$01
+3200     BEQ ML2
+3205     JMP ML3
+3210 ML0 LDA M0FLAG
+3215     CMP #$00
+3220     BNE ML0A
+3225     LDA #1
+3230     CMP KILL0
+3235     BEQ ML0END
+3240     LDA STRIG0
+3245     CMP #$00
+3250     BEQ NEWML0
+3255     JMP ML0END
+3260 ML0A
+3265     LDX #4
+3270     LDA Y0,X
+3275     CMP #$05
+3280     BCS MLCONT0
+3285     LDA #0
+3290     STA M0FLAG
+3292     LDA MASK0
+3293     STA MASK
+3295     JSR RESETMLPOS
+3300     JMP ML0END
+3305 MLCONT0
+3310     LDY SHPINDEX,X
+3315     JSR GETPM
+3320     DEC VRTPTR
+3325     LDA VRTPTR
+3330     STA Y0,X
+3335     LDA MASK0
+3340     STA MASK
+3345     JSR DRAWML
+3360     JMP ML0END
+3365 NEWML0
+3370     LDA #1
+3375     STA M0FLAG
+3380     LDX #4
+3385     LDY SHPINDEX,X
+3390     JSR GETPM
+3395     LDA X0
+3400     ADC #1
+3405     STA HPOSP0,X
+3410     STA X0,X
+3415     LDA Y0
+3420     STA VRTPTR
+3425     STA Y0,X
+3430     LDA MASK0
+3435     STA MASK
+3440     JSR DRAWML
+3445 ML0END
+3450     RTS 
+3455 ML2
+3460     LDA M2FLAG
+3465     CMP #$01
+3470     BEQ ML2A
+3475     LDA #1
+3480     CMP KILL2
+3485     BEQ ML2END
+3490     JMP NEWML2
+3495 ML2A
+3500     LDX #6
+3505     LDA Y0,X
+3510     CMP #$64
+3515     BCC MLCONT2
+3520     LDA #0
+3525     STA M2FLAG
+3526     LDA MASK2
+3527     STA MASK
+3530     JSR RESETMLPOS
+3535     JMP ML2END
+3540 MLCONT2
+3545     LDY SHPINDEX,X
+3550     JSR GETPM
+3555     INC VRTPTR
+3560     LDA VRTPTR
+3565     STA Y0,X
+3570     LDA MASK2
+3575     STA MASK
+3580     JSR DRAWML
+3585     JMP ML2END
+3590 NEWML2
+3610     LDA Y0+2
+3615     CMP #$10
+3620     BCC ML2END
+3625     CMP #$5A
+3630     BCS ML2END
+3635     LDA #1
+3640     STA M2FLAG
+3645     LDX #6
+3650     LDY SHPINDEX,X
+3655     JSR GETPM
+3660     LDA X0+2
+3665     ADC #1
+3670     STA HPOSP0,X
+3675     STA X0,X
+3680     LDA Y0+2
+3685     STA VRTPTR
+3690     STA Y0,X
+3695     LDA MASK2
+3700     STA MASK
+3705     JSR DRAWML
+3710 ML2END
+3715     RTS 
+3720 ML3
+3725     LDA M3FLAG
+3730     CMP #$01
+3735     BEQ ML3A
+3740     LDA #1
+3745     CMP KILL3
+3750     BEQ ML2END
+3755     JMP NEWML3
+3760 ML3A
+3765     LDX #7
+3770     LDA Y0,X
+3775     CMP #$64
+3780     BCC MLCONT3
+3785     LDA #0
+3790     STA M3FLAG
+3792     LDA MASK3
+3793     STA MASK
+3795     JSR RESETMLPOS
+3800     JMP ML3END
+3805 MLCONT3
+3810     LDY SHPINDEX,X
+3815     JSR GETPM
+3820     INC VRTPTR
+3825     LDA VRTPTR
+3830     STA Y0,X
+3835     LDA MASK3
+3840     STA MASK
+3845     JSR DRAWML
+3850     JMP ML3END
+3855 NEWML3
+3875     LDA Y0+2
+3880     CMP #$05
+3885     BCC ML3END
+3890     CMP #$5A
+3895     BCS ML2END
+3900     LDA #1
+3905     STA M3FLAG
+3910     LDX #7
+3915     LDY SHPINDEX,X
+3920     JSR GETPM
+3925     LDA X0+3
+3930     ADC #1
+3935     STA HPOSP0,X
+3940     STA X0,X
+3945     LDA Y0+3
+3950     STA VRTPTR
+3955     STA Y0,X
+3960     LDA MASK3
+3965     STA MASK
+3970     JSR DRAWML
+3975 ML3END
+3980     RTS 
+3985 RESETMLPOS
+3990     LDA VPOSITION,X
+3995     STA Y0,X
+4000     LDA HPOSITION,X
+4005     STA X0,X
+4010     STA HPOSP0,X
+4015     JSR DRAWML
+4020     JSR MLADR
+4025     JSR BLKFIL
+4030     RTS 
+4035 DRAWML
+4040     STY TEMP
+4045     CLC 
+4050     JSR MLADR
+4055     LDA TABPTR
+4060     ADC VRTPTR
+4065     STA TABPTR
+4070     LDY #0
+4075 FILLML
+4080     LDA (SHAPE),Y
+4085     AND MASK
+4090     STA (TABPTR),Y
+4095     INY 
+4100     CPY LENGTH
+4105     BCC FILLML
+4110 ;   CLC
+4115     LDY #0
+4120 MERGEML
+4125     LDA SHPINDEX,X
+4130     CMP #$1E
+4135     BEQ MIL1ST
+4140     CMP #$26
+4145     BEQ MIL2ND
+4150     JMP MIL3RD
+4155 MIL1ST
+4160     LDA (TABPTR),Y
+4165     ORA MIL0A,Y
+4170     STA (TABPTR),Y
+4175     INY 
+4180     CPY LENGTH
+4185     BCC MIL1ST
+4190     JMP MLDONE
+4195 MIL2ND
+4200     LDA (TABPTR),Y
+4205     ORA MIL2A,Y
+4210     STA (TABPTR),Y
+4215     INY 
+4220     CPY LENGTH
+4225     BCC MIL2ND
+4230     JMP MLDONE
+4235 MIL3RD
+4240     LDA (TABPTR),Y
+4245     ORA MIL3A,Y
+4250     STA (TABPTR),Y
+4255     INY 
+4260     CPY LENGTH
+4265     BCC MIL3RD
+4270 MLDONE
+4275     LDY TEMP
+4280     RTS 
+4285 MLADR
+4290     LDA MLBOFS
+4295     STA TABPTR
+4300     LDA MLBOFS+1
+4305     STA TABPTR+1
+4310     RTS 
+4315 RETURNVBV
+4320     JSR COLLISION
+4325     JMP XITVBV
+5300 ; ***** MAIN TITLE *****
+5302 TITLE
+5305     LDA #0
+5310     STA SDMCTL
+5315     LDA # <TDLIST
+5320     STA SDLSTL
+5325     LDA # >TDLIST
+5330     STA SDLSTH
+5335     LDA #$22
+5340     STA SDMCTL
+5345     JSR TCKSET
+5350     LDA #70
+5355     STA CSCROLH
+5360     LDA #4
+5365     STA FSCROLH
+5370     LDY # <INTSCRL
+5375     LDX # >INTSCRL
+5380     LDA #6
+5385     JSR SETVBV
+5390 INTSCRL
+5395     LDA # <TITSCRL
+5400     STA VVBLKI
+5405     LDA # >TITSCRL
+5410     STA VVBLKI+1
+5415     RTS 
+5420 TITSCRL
+5425     LDX FSCROLH
+5430     DEX 
+5435     STX HSCROL
+5440     BNE CONT
+5445     LDX #4
+5450 CONT
+5455     STX FSCROLH
+5460     CPX #3
+5465     BEQ COARSE
+5470     JMP SYSVBV
+5475 COARSE
+5480     LDY CSCROLH
+5485     DEY 
+5490     BNE SCORSE
+5495     LDY #70
+5500     JSR TCKSET
+5505 SCORSE
+5510     STY CSCROLH
+5520     INC SCROLT
+5525     BNE RETURN
+5530     INC SCROLT+1
+5535 RETURN
+5540     JMP SYSVBV
+5545 TCKSET
+5550     LDA # <TITLE3
+5555     STA SCROLT
+5560     LDA # >TITLE3
+5565     STA SCROLT+1
+5570     RTS 
+5574     *=  $3C00
+5575 TDLIST
+5580     .BYTE $70,$70,$70,$45
+5585     .WORD LN1
+5590     .BYTE $05,$05,$05,$05,$47
+5595     .WORD TITLE1
+5600     .BYTE $45
+5605     .WORD LN2
+5610     .BYTE $05,$05,$05,$05,$42
+5615     .WORD TITLE2
+5620     .BYTE $52
+5625 SCROLT
+5630     .WORD $00
+5635     .BYTE $41
+5640     .WORD TDLIST
+5645 TITLE1 .SBYTE "      WAR ZONE      "
+5655 TITLE2 .SBYTE "       PRESS ”‘¡“‘ TO BEGIN GAME        "
+5658 TITLE3 .SBYTE "                                        "
+5660     .SBYTE "         BY ROLAND AND HAYDEN TEAGUE    "
+5665     .SBYTE "                                        "
+5800 SCREEN
+5805     LDA #0
+5810     STA SDMCTL
+5815     LDA # <SDLIST
+5820     STA SDLSTL
+5825     LDA # >SDLIST
+5830     STA SDLSTH
+5835     LDA #$22
+5840     STA SDMCTL
+5845     JSR SCRSET
+5850     LDA #151
+5855     STA CSCROLV
+5860     LDA #16
+5865     STA FSCROLV
+5870     LDY # <INTVBI
+5875     LDX # >INTVBI
+5880     LDA #6
+5885     JSR SETVBV
+5890 INTVBI
+5895     LDA # <SCROLL
+5900     STA VVBLKI
+5905     LDA # >SCROLL
+5910     STA VVBLKI+1
+5920     RTS 
+5922 SCROLL
+5925     LDA #1
+5926     CMP LVLOVER
+5927     BEQ RETURN1
+5928     CMP RESETLVL
+5929     BEQ REDOLVL
+5930     JSR PAUSEI
+5931     LDA PAUSE
+5932     CMP #$01
+5933     BEQ RETURN1
+5934     LDX FSCROLV
+5935     DEX 
+5940     STX VSCROL
+5945     BNE CONT1
+5950     LDX #16
+5955 CONT1
+5960     STX FSCROLV
+5965     CPX #15
+5970     BEQ COARSE1
+5975     JMP SYSVBV
+5980 COARSE1
+5985     LDY CSCROLV
+5986     CPY #91
+5987     BNE COUNT
+5988     JSR SCRSET1
+5990 COUNT
+5992     DEY 
+5995     BNE SCORSE1
+6000     LDA #1
+6005     STA LVLOVER
+6006     JSR RESTORESCR
+6007     LDY #150
+6010 SCORSE1
+6015     STY CSCROLV
+6020     SEC 
+6025     LDA SCROLS
+6028     SBC #40
+6030     STA SCROLS
+6032     BCS RETURN1
+6035     DEC SCROLS+1
+6040 RETURN1
+6042     JMP SYSVBV
+6045 REDOLVL
+6047     JSR SCRSET
+6049     LDA #151
+6051     STA CSCROLV
+6052     LDA #16
+6053     STA FSCROLV
+6054     LDA #0
+6055     STA RESETLVL
+6057     JMP SYSVBV
+6060 SCRSET
+6065     LDA # <LN4
+6070     STA SCROLS
+6075     LDA # >LN4
+6080     STA SCROLS+1
+6085     RTS 
+6090 SCRSET1
+6095     LDA # <LN3
+6100     STA SCROLS
+6110     LDA # >LN3
+6115     STA SCROLS+1
+6120     RTS 
+6125 COPYSCR
+6126     LDA # <DISPLAY
+6127     STA DISPLAYPTR
+6128     LDA # >DISPLAY
+6129     STA DISPLAYPTR+1
+6130     LDA # <DISPBUF
+6131     STA DISPBUFPTR
+6132     LDA # >DISPBUF
+6133     STA DISPBUFPTR+1
+6134     LDY #0
+6135 LOOP LDA (DISPLAYPTR),Y
+6140     STA (DISPBUFPTR),Y
+6145     CMP #EOD
+6150     BEQ DONECP
+6155     INY 
+6160     BNE LOOP
+6165     INC DISPLAYPTR+1
+6170     INC DISPBUFPTR+1
+6200     JMP LOOP
+6210 DONECP RTS 
+6225 RESTORESCR
+6230     LDA # <DISPLAY
+6235     STA DISPLAYPTR
+6240     LDA # >DISPLAY
+6245     STA DISPLAYPTR+1
+6250     LDA # <DISPBUF
+6255     STA DISPBUFPTR
+6260     LDA # >DISPBUF
+6265     STA DISPBUFPTR+1
+6270     LDY #0
+6275 RESTORELOOP LDA (DISPBUFPTR),Y
+6280     STA (DISPLAYPTR),Y
+6285     CMP #EOD
+6290     BEQ DONERESTORE
+6295     INY 
+6300     BNE RESTORELOOP
+6305     INC DISPLAYPTR+1
+6310     INC DISPBUFPTR+1
+6315     JMP RESTORELOOP
+6320 DONERESTORE RTS 
+6398 ; $65 = LSM+VS+MODE05
+6399     *=  $4F00
+6400 SDLIST
+6405     .BYTE $70,$70,$70,$65
+6410 SCROLS .WORD $00
+6415     .BYTE $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$05,$42
+6427     .WORD SCL
+6428     .BYTE $02
+6429     .BYTE $41
+6430     .WORD SDLIST
+6455     *=  $5000
+6456 DISPLAY
+6460     .SBYTE "                                        "
+6461     .SBYTE "                                        "
+6462     .SBYTE "                                        "
+6463     .SBYTE "                                        "
+6464     .SBYTE "                                        "
+6465     .SBYTE "                                        "
+6466     .SBYTE "                                        "
+6467     .SBYTE "                                        "
+6468     .SBYTE "                                        "
+6469     .SBYTE "                                        "
+6470     .SBYTE "                                        "
+6475 LN1 .SBYTE "                                   äãå  "
+6480     .SBYTE "                    äãå      çéè  "
+6485     .SBYTE "            	       çéè  äãå      "
+6490     .SBYTE "    äãå               äãå      çéè      "
+6495     .SBYTE "    çéè               çéè               "
+6500     .SBYTE "                                        "
+6505 LN2 .SBYTE "                        "
+6510     .SBYTE " äãå          äãå       "
+6515     .SBYTE " çéè        çéè       "
+6520     .SBYTE "      	       	   "
+6525     .SBYTE "                    "
+6530     .SBYTE "                    "
+6535     .SBYTE "               äãå    "
+6540     .SBYTE "               çéè    "
+6545     .SBYTE "                       "
+6550     .SBYTE "           	             "
+6555     .SBYTE "               äãå       "
+6560     .SBYTE "     äãå         çéè       "
+6565     .SBYTE "     çéè                     "
+6570     .SBYTE "                  äãå     äãå  "
+6575     .SBYTE "        äãå         çéè     çéè  "
+6580     .SBYTE "        çéè                        "
+6585     .SBYTE "                                   "
+6590     .SBYTE "   äãå    äãå                      "
+6595     .SBYTE "   çéè    çéè           äãå        "
+6600     .SBYTE "                       çéè        "
+6605     .SBYTE "                                 "
+6610     .SBYTE " äãå  äãå  äãå         "
+6615     .SBYTE " çéè  çéè  çéè         "
+6620     .SBYTE "                          "
+6625     .SBYTE "                        "
+6630     .SBYTE "      äãå               "
+6635     .SBYTE "      çéè               "
+6645     .SBYTE "                    		    "
+6650     .SBYTE "                        "
+6655     .SBYTE "                        "
+6660     .SBYTE "            äãå         "
+6665     .SBYTE "    äãå     çéè         "
+6670     .SBYTE "    çéè                        "
+6675     .SBYTE "                     <=    <=   "
+6680     .SBYTE "                                "
+6685     .SBYTE "      äãå          <=   <=   <= "
+6690     .SBYTE "      çéè                       "
+6695     .SBYTE "                   <=   <=   <= "
+6700     .SBYTE "                        "
+6705     .SBYTE "      <=   <=   <=   <= "
+6710     .SBYTE "                          "
+6715     .SBYTE "        <=   <=   <=   <= "
+6720     .SBYTE "    	                      "
+6725     .SBYTE "        <=   <=   <=   <= "
+6730     .SBYTE "                           "
+6735     .SBYTE "        <=   <=   <=   <= "
+6740     .SBYTE "    	                      "
+6745     .SBYTE "        <=   <=   <=   <= "
+6750     .SBYTE "                         "
+6755     .SBYTE "       <=   <=   <=   <= "
+6760     .SBYTE "                               "
+6765     .SBYTE "                            "
+6770     .SBYTE "    äãå             	       "
+6775     .SBYTE "    çéè                        "
+6780     .SBYTE "                    äãå    äãå  "
+6785     .SBYTE "  äãå     äãå        çéè    çéè  "
+6790     .SBYTE "  çéè     çéè                     "
+6795     .SBYTE "                        äãå       "
+6800     .SBYTE "                 çéè       "
+6805     .SBYTE "   	             "
+6810     .SBYTE "                        "
+6815     .SBYTE "    äãå         äãå       "
+6820     .SBYTE "    çéè         çéè       "
+6825     .SBYTE "                       	   "
+6830     .SBYTE "                   "
+6835     .SBYTE "     <=<=              "
+6840     .SBYTE "     	                   "
+6845     .SBYTE "                                "
+6850     .SBYTE "           äãå         	   "
+6855     .SBYTE "           çéè           "
+6860     .SBYTE "                         "
+6865     .SBYTE "                     äãå   "
+6870     .SBYTE "     <=               çéè   "
+6875 LN3 .SBYTE "     	                     "
+6880     .SBYTE "                                "
+6885     .SBYTE "             äãå    "
+6890     .SBYTE "              çéè    "
+6895     .SBYTE "                    "
+6900     .SBYTE "   äãå    	          "
+6905     .SBYTE "   çéè               "
+6910     .SBYTE "                    "
+6915     .SBYTE "              äãå   "
+6920     .SBYTE "  äãå     	    çéè   "
+6925     .SBYTE "  çéè               "
+6930     .SBYTE "                                        "
+6935     .SBYTE "                                        "
+7000 ; ***** JUMP *****
+7005     .SBYTE "     	                     "
+7010     .SBYTE "                                "
+7015     .SBYTE "             äãå    "
+7020     .SBYTE "              çéè    "
+7025     .SBYTE "                    "
+7030     .SBYTE "   äãå    	          "
+7035     .SBYTE "   çéè               "
+7040     .SBYTE "                    "
+7045     .SBYTE "              äãå   "
+7050     .SBYTE "  äãå     	    çéè   "
+7055     .SBYTE "  çéè               "
+7100     .SBYTE "                        äãå     "
+7110     .SBYTE "   äãå   äãå            çéè     "
+7120     .SBYTE "   çéè   çéè                    "
+7130     .SBYTE "                                "
+7140     .SBYTE "                           "
+7145     .SBYTE "                     <=     "
+7150     .SBYTE " äãå    	     "
+7155     .SBYTE " çéè                "
+7160     .SBYTE "             äãå   "
+7165     .SBYTE "             çéè   "
+7170     .SBYTE "      	             "
+7175     .SBYTE "         äãå       "
+7180     .SBYTE "  äãå                         çéè       "
+7190     .SBYTE "  çéè                äãå           äãå  "
+7195     .SBYTE "                     çéè           çéè  "
+7200     .SBYTE "                                        "
+7205     .SBYTE "                                        "
+7210     .SBYTE "                                        "
+7215     .SBYTE "                                        "
+7220     .SBYTE "                                        "
+7225     .SBYTE "                                        "
+7230     .SBYTE "                                        "
+7235     .SBYTE "                                        "
+7240     .SBYTE "                                        "
+7245     .SBYTE "                                        "
+7250     .SBYTE "                                        "
+7255     .SBYTE "                                        "
+7260     .SBYTE "                  ]   ]                 "
+7265     .SBYTE "                [^\^^^\^;               "
+7270     .SBYTE "               _acd              "
+7275     .SBYTE "               `bef~              "
+7280     .SBYTE "               -              "
+7285     .SBYTE "               hi              "
+7290     .SBYTE "                           "
+7295     .SBYTE "              l             "
+7300     .SBYTE "           ]  l            "
+7305     .SBYTE "          [\^^jl           "
+7310     .SBYTE "          tywnoop           "
+7315     .SBYTE "          vz{}qrrs           "
+7320     .SBYTE "          uzzzwi           "
+7325     .SBYTE "           htzz}i           "
+7330     .SBYTE "           huz|zwnoop           "
+7335     .SBYTE "           htyzxqrrs           "
+7340     .SBYTE "           hvzz}i           "
+7345     .SBYTE "           huzzzw,#$%'           "
+7350     .SBYTE "           htz{}()*+           "
+7355     .SBYTE "           hvz|zwi           "
+7360     .SBYTE "           huzzz}noop           "
+7365     .SBYTE "           htzzzwqrrs           "
+7370 LN4 .SBYTE "           huzz}i             "
+7375     .SBYTE "           nooptz{zwi             "
+7380     .SBYTE "           qrrsuzzz}i             "
+7385     .SBYTE "           @>tzzzw!             "
+7390     .SBYTE "             huzz}i              "
+7395     .SBYTE "             @tz{zwi              "
+7400     .SBYTE "              huzzz}i              "
+7405     .SBYTE "              @>>>>////>>!              "
+7410     .SBYTE "                                        "
+7415     .SBYTE "                                        "
+7420     .SBYTE "                                        "
+7425     .BYTE $9B
+7505     *=  $9000
+7515 LEVELSCR
+7520     LDA #0
+7525     STA SDMCTL
+7530     LDA # <LDLIST
+7535     STA SDLSTL
+7540     LDA # >LDLIST
+7545     STA SDLSTH
+7550     LDA #$22
+7555     STA SDMCTL
+7556     LDY # <INTLVL
+7557     LDX # >INTLVL
+7558     LDA #6
+7559     JSR SETVBV
+7560     RTS 
+7561 INTLVL
+7562     JMP SYSVBV
+7565 LDLIST
+7570     .BYTE $70,$70,$70,$70,$70,$70
+7580     .BYTE $70,$70,$70,$70,$70,$47
+7585     .WORD LEVEL1
+7595     .BYTE $70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$42
+7600     .WORD LEVEL2
+7605     .BYTE $41
+7610     .WORD LDLIST
+7620 LEVEL1 .SBYTE "   LEVEL COMPLETE    "
+7625 LEVEL2 .SBYTE "   PRESS ANY KEY TO BEGIN NEXT LEVEL    "
+7635 GAMEOVERSCR
+7640     LDA SCORE2
+7645     CLC 
+7650     ADC #16
+7655     STA GAMEOVER2+11
+7660     LDA SCORE1
+7665     CLC 
+7670     ADC #16
+7675     STA GAMEOVER2+12
+7680     LDA SCORE0
+7685     CLC 
+7690     ADC #16
+7695     STA GAMEOVER2+13
+7700     LDA #0
+7705     STA SDMCTL
+7710     LDA # <GODLIST
+7715     STA SDLSTL
+7720     LDA # >GODLIST
+7725     STA SDLSTH
+7730     LDA #$22
+7735     STA SDMCTL
+7740     LDY # <INTGO
+7745     LDX # >INTGO
+7750     LDA #6
+7755     JSR SETVBV
+7760     RTS 
+7765 INTGO
+7770     JMP SYSVBV
+7775 GODLIST
+7780     .BYTE $70,$70,$70,$70,$70,$70
+7785     .BYTE $70,$70,$70,$70,$70,$47
+7790     .WORD GAMEOVER1
+7795     .BYTE $47
+7800     .WORD GAMEOVER2
+7805     .BYTE $70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$70,$42
+7810     .WORD GAMEOVER3
+7815     .BYTE $41
+7820     .WORD GODLIST
+7825 GAMEOVER1 .SBYTE "      GAME OVER      "
+7830 GAMEOVER2 .SBYTE "    SCORE: 00000     "
+7835 GAMEOVER3 .SBYTE "     PRESS ”≈Ã≈√‘ FOR TITLE SCREEN      "
+7840 SCL .SBYTE "PLANES LEFT: 3              SCORE: 00000"
+7845 QG  .SBYTE "       PRESS ”≈Ã≈√‘ TO QUIT GAME        "
+7850 GP  .SBYTE "             «¡Õ≈†–¡’”≈ƒ                "
+8010 X0
+8020     .BYTE $00,$00,$00,$00,$00,$00,$00,$00
+8030 Y0
+8040     .BYTE $00,$00,$00,$00,$00,$00,$00,$00
+8050 VPOSITION
+8060     .BYTE $55,$55,$00,$00,$00,$00,$00,$00
+8070 HPOSITION
+8080     .BYTE $80,$80,$B0,$40,$00,$00,$00,$00
+8090 DIRECTION
+8100     .BYTE $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+8110 SHPINDEX
+8120     .BYTE $00,$08,$10,$14,$1E,$22,$26,$2A
+8130 PMLEN
+8140     .BYTE $12,$12,$12,$12,$06,$06,$06,$06
+8150 PMGSHP
+8160     .WORD PLAYER0A,PLAYER0B,PLAYER0C,PLAYER0D
+8170     .WORD PLAYER1A,PLAYER1B,PLAYER1C,PLAYER1D
+8173     .WORD PLAYER2A,PLAYER2B
+8175     .WORD PLAYER3A,PLAYER3B,PLAYER3C,PLAYER3D,PLAYER3E
+8178     .WORD MIL0A,MIL0B,MIL1A,MIL1B,MIL2A,MIL2B,MIL3A,MIL3B
+8180 PLAYER0A
+8185     .BYTE $00,$00,$18,$18,$00,$00,$00,$3C,$3C,$7E,$FF,$FF,$18,$3C,$66,$66,$00,$00
+8190 PLAYER0B
+8195     .BYTE $00,$00,$0C,$0C,$04,$04,$06,$1E,$1F,$3F,$FF,$FC,$0E,$1E,$76,$76,$70,$00
+8200 PLAYER0C
+8205     .BYTE $00,$00,$30,$30,$20,$20,$60,$78,$F8,$FC,$FF,$3F,$70,$70,$6E,$6E,$0E,$00
+8210 PLAYER0D
+8215     .BYTE $00
+8220 PLAYER1A
+8225     .BYTE $00,$00,$00,$00,$18,$18,$18,$00,$00,$00,$00,$00,$00,$00,$18,$00,$00,$00
+8230 PLAYER1B
+8235     .BYTE $00,$00,$00,$00,$08,$08,$08,$00,$00,$00,$00,$00,$00,$00,$08,$00,$00,$00
+8240 PLAYER1C
+8245     .BYTE $00,$00,$00,$00,$10,$10,$10,$00,$00,$00,$00,$00,$00,$00,$10,$00,$00,$00
+8250 PLAYER1D
+8255     .BYTE $00
+8260 PLAYER2A
+8270     .BYTE $00,$00,$66,$3C,$3C,$18,$FF,$FF,$7E,$3C,$3C,$18,$18,$18,$18,$18,$00,$00
+8275 PLAYER2B
+8280     .BYTE $00
+8285 PLAYER3A
+8290     .BYTE $00,$00,$66,$3C,$3C,$18,$FF,$FF,$7E,$3C,$3C,$18,$18,$18,$18,$18,$00,$00
+8295 PLAYER3B
+8300     .BYTE $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+8305 PLAYER3C
+8310     .BYTE $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+8315 PLAYER3D
+8320     .BYTE $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+8325 PLAYER3E
+8330     .BYTE $00
+8350 MIL0A
+8355     .BYTE $00,$02,$02,$02,$02,$00
+8360 MIL0B
+8365     .BYTE $00
+8370 MIL1A
+8375     .BYTE $00,$08,$08,$08,$08,$00
+8380 MIL1B
+8385     .BYTE $00
+8390 MIL2A
+8395     .BYTE $00,$20,$20,$20,$20,$00
+8400 MIL2B
+8405     .BYTE $00
+8410 MIL3A
+8415     .BYTE $00,$80,$80,$80,$80,$00
+8420 MIL3B
+8425     .BYTE $00
+8450 DEREZ
+8455     .BYTE $DD,$DD,$6B,$6B,$AA,$AA,$E6,$E6,$55,$55,$AA,$AA,$4A,$4A,$35,$35,$4A,$4A,$64,$64,$92,$92,$25,$25,$11
+8800 ; ***** CUSTOM CHARACTER SET *****
+8802 NEWCHSET
+8805     LDY #0
+8810 COPY LDA CHORG,Y
+8815     STA CHDEST,Y
+8820     LDA CHORG+$0100,Y
+8825     STA CHDEST+$0100,Y
+8830     LDA CHORG+$0200,Y
+8835     STA CHDEST+$0200,Y
+8840     LDA CHORG+$0300,Y
+8845     STA CHDEST+$0300,Y
+8850     INY 
+8855     BNE COPY
+8860     LDY #0
+8865 INST LDA CHSET,Y
+8870     STA CHDEST,Y
+8875     LDA CHSET+$0100,Y
+8880     STA CHDEST+$0100,Y
+8895     LDA CHSET+$0200,Y
+8900     STA CHDEST+$0200,Y
+8905     LDA CHSET+$0300,Y
+8910     STA CHDEST+$0300,Y
+8915     INY 
+8920     BNE INST
+8925     LDA # >CHDEST
+8930     STA CHBAS
+8935     RTS 
+9000 CHSET .BYTE $00,$00,$00,$00,$00,$00,$00,$00
+9005     .BYTE $AB,$AB,$AB,$AB,$AB,$AB,$AF,$FC
+9010     .BYTE $AA,$AB,$AD,$AD,$AB,$AA,$AA,$AA
+9015     .BYTE $FF,$55,$FF,$FF,$5F,$DF,$DF,$DD
+9020     .BYTE $FF,$55,$FF,$FD,$F7,$DF,$7D,$F7
+9025     .BYTE $FF,$55,$FA,$7A,$DA,$E6,$69,$DA
+9030     .BYTE $1C,$36,$1C,$38,$6F,$66,$3B,$00
+9035     .BYTE $FF,$57,$A7,$A7,$A7,$A7,$A7,$67
+9040     .BYTE $DD,$DF,$DF,$DF,$DF,$DF,$D5,$FF
+9045     .BYTE $F7,$7D,$DF,$F7,$FD,$FE,$55,$FF
+9050     .BYTE $DA,$69,$A6,$9A,$6A,$AA,$55,$FF
+9055     .BYTE $67,$A7,$A7,$A7,$A7,$A7,$57,$FF
+9060     .BYTE $AA,$AB,$AD,$AD,$AB,$AA,$AA,$AA
+9065     .BYTE $AC,$AC,$AC,$AC,$AC,$AC,$AC,$AC
+9070     .BYTE $00,$00,$00,$00,$00,$18,$18,$00
+9075     .BYTE $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+9080     .BYTE $00,$3C,$66,$6E,$76,$66,$3C,$00
+9085     .BYTE $00,$18,$38,$18,$18,$18,$7E,$00
+9090     .BYTE $00,$3C,$66,$0C,$18,$30,$7E,$00
+9095     .BYTE $00,$7E,$0C,$18,$0C,$66,$3C,$00
+9100     .BYTE $00,$0C,$1C,$3C,$6C,$7E,$0C,$00
+9105     .BYTE $00,$7E,$60,$7C,$06,$66,$3C,$00
+9110     .BYTE $00,$3C,$60,$7C,$66,$66,$3C,$00
+9115     .BYTE $00,$7E,$06,$0C,$18,$30,$30,$00
+9120     .BYTE $00,$3C,$66,$3C,$66,$66,$3C,$00
+9125     .BYTE $00,$3C,$66,$3E,$06,$0C,$38,$00
+9130     .BYTE $00,$00,$18,$18,$00,$18,$18,$00
+9135     .BYTE $FC,$AF,$AB,$AB,$AB,$AB,$AB,$AB
+9140     .BYTE $05,$1A,$66,$69,$69,$66,$1A,$05
+9145     .BYTE $50,$A4,$99,$69,$69,$99,$A4,$50
+9150     .BYTE $AA,$AA,$AA,$AA,$AA,$AA,$AA,$FF
+9155     .BYTE $00,$3C,$66,$0C,$18,$00,$18,$00
+9160     .BYTE $EA,$EA,$EA,$EA,$EA,$EA,$FA,$3F
+9165     .BYTE $00,$18,$3C,$66,$66,$7E,$66,$00
+9170     .BYTE $00,$7C,$66,$7C,$66,$66,$7C,$00
+9175     .BYTE $00,$3C,$66,$60,$60,$66,$3C,$00
+9180     .BYTE $00,$78,$6C,$66,$66,$6C,$78,$00
+9185     .BYTE $00,$7E,$60,$7C,$60,$60,$7E,$00
+9190     .BYTE $00,$7E,$60,$7C,$60,$60,$60,$00
+9195     .BYTE $00,$3E,$60,$60,$6E,$66,$3E,$00
+9200     .BYTE $00,$66,$66,$7E,$66,$66,$66,$00
+9205     .BYTE $00,$7E,$18,$18,$18,$18,$7E,$00
+9210     .BYTE $00,$06,$06,$06,$06,$66,$3C,$00
+9215     .BYTE $00,$66,$6C,$78,$78,$6C,$66,$00
+9220     .BYTE $00,$60,$60,$60,$60,$60,$7E,$00
+9225     .BYTE $00,$63,$77,$7F,$6B,$63,$63,$00
+9230     .BYTE $00,$66,$76,$7E,$7E,$6E,$66,$00
+9235     .BYTE $00,$3C,$66,$66,$66,$66,$3C,$00
+9240     .BYTE $00,$7C,$66,$66,$7C,$60,$60,$00
+9245     .BYTE $00,$3C,$66,$66,$66,$6C,$36,$00
+9250     .BYTE $00,$7C,$66,$66,$7C,$6C,$66,$00
+9255     .BYTE $00,$3C,$60,$3C,$06,$06,$3C,$00
+9260     .BYTE $00,$7E,$18,$18,$18,$18,$18,$00
+9265     .BYTE $00,$66,$66,$66,$66,$66,$7E,$00
+9270     .BYTE $00,$66,$66,$66,$66,$3C,$18,$00
+9275     .BYTE $00,$63,$63,$6B,$7F,$77,$63,$00
+9280     .BYTE $00,$66,$66,$3C,$3C,$66,$66,$00
+9285     .BYTE $00,$66,$66,$3C,$18,$18,$18,$00
+9290     .BYTE $00,$7E,$0C,$18,$30,$60,$7E,$00
+9295     .BYTE $3F,$FA,$EA,$EA,$EA,$EA,$EA,$EA
+9300     .BYTE $EB,$AA,$AA,$AA,$AA,$AA,$AA,$AA
+9305     .BYTE $00,$00,$FF,$EB,$EB,$EB,$EB,$EB
+9310     .BYTE $FF,$AA,$AA,$AA,$AA,$AA,$AA,$AA
+9315     .BYTE $AF,$BF,$FE,$FA,$FA,$FA,$FB,$FF
+9320     .BYTE $55,$5F,$77,$7D,$7F,$7F,$7F,$7F
+9325     .BYTE $55,$FF,$FF,$FF,$7F,$DF,$F7,$FD
+9330     .BYTE $55,$FF,$FF,$FF,$FF,$FF,$FF,$55
+9335     .BYTE $55,$FF,$FF,$FF,$FD,$F6,$DA,$6A
+9340     .BYTE $55,$F5,$D9,$69,$A9,$A9,$A9,$A9
+9345     .BYTE $7F,$7F,$7F,$7F,$7D,$76,$5A,$55
+9350     .BYTE $FD,$F6,$DA,$6A,$AA,$AA,$AA,$55
+9355     .BYTE $55,$AA,$AA,$AA,$AA,$AA,$AA,$55
+9360     .BYTE $6A,$9A,$A6,$A9,$AA,$AA,$AA,$55
+9365     .BYTE $A9,$A9,$A9,$A9,$69,$99,$A5,$55
+9370     .BYTE $00,$00,$00,$03,$0F,$3F,$3F,$03
+9375     .BYTE $00,$00,$C0,$FC,$FF,$77,$55,$F5
+9380     .BYTE $00,$00,$00,$00,$00,$C0,$40,$50
+9385     .BYTE $3F,$0F,$0F,$03,$00,$00,$00,$00
+9390     .BYTE $F7,$FF,$DD,$D5,$55,$04,$00,$00
+9395     .BYTE $FC,$F0,$40,$40,$00,$00,$00,$00
+9400     .BYTE $7F,$7F,$7F,$7F,$7F,$7F,$7F,$7F
+9405     .BYTE $FD,$FD,$FD,$FD,$FD,$FD,$FD,$FD
+9410     .BYTE $A9,$A9,$A9,$A9,$A9,$A9,$A9,$A9
+9415     .BYTE $6A,$6A,$6A,$6A,$6A,$6A,$6A,$6A
+9420     .BYTE $AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA
+9425     .BYTE $02,$02,$0A,$0A,$2A,$2A,$AA,$AA
+9430     .BYTE $80,$80,$A0,$A0,$A8,$A8,$AA,$AA
+9435     .BYTE $AA,$AA,$A8,$A8,$A0,$A0,$80,$80
+9440     .BYTE $AA,$AA,$2A,$2A,$0A,$0A,$02,$02
+9445     .BYTE $55,$55,$55,$79,$79,$55,$55,$55
+9450     .BYTE $55,$55,$55,$55,$55,$55,$55,$55
+9455     .BYTE $78,$60,$78,$60,$7E,$18,$1E,$00
+9460     .BYTE $03,$03,$03,$03,$03,$03,$03,$03
+9465     .BYTE $0E,$0E,$0E,$0E,$0E,$0E,$0E,$0E
+9470     .BYTE $3A,$3A,$3A,$3A,$3A,$3A,$3A,$3A
+9475     .BYTE $C0,$C0,$C0,$C0,$C0,$C0,$C0,$C0
+9480     .BYTE $FE,$FA,$FA,$FA,$FA,$FE,$BF,$AF
+9485     .BYTE $FA,$FE,$BF,$AF,$AA,$AA,$FA,$FE
+9490     .BYTE $BF,$AF,$AF,$AF,$AF,$BF,$FE,$FA
+9495     .BYTE $FF,$FF,$FA,$FA,$FA,$FA,$FB,$FF
+9500     .BYTE $FF,$FF,$AA,$AA,$AA,$AA,$FA,$FE
+9505     .BYTE $FE,$FA,$AA,$AA,$FA,$FE,$BF,$AF
+9510     .BYTE $BF,$AF,$AF,$AF,$AF,$BF,$FE,$FA
+9515     .BYTE $AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA
+9520     .BYTE $EA,$EA,$EA,$EA,$EA,$EA,$EA,$EA
+9525     .BYTE $AB,$AB,$AB,$AB,$AB,$AB,$AB,$AB
+9530     .BYTE $EA,$AA,$AA,$AA,$AA,$AA,$AA,$AA
+9535     .BYTE $AB,$AA,$AA,$AA,$AA,$AA,$AA,$AA
+9540     .BYTE $C0,$C0,$B0,$B0,$AC,$AC,$AB,$AB
+9545     .BYTE $EA,$EA,$3A,$3A,$0E,$0E,$03,$03
+9550     .BYTE $FF,$D6,$D6,$D6,$D6,$D6,$D6,$D6
+9555     .BYTE $FF,$56,$56,$56,$56,$56,$56,$56
+9560     .BYTE $FF,$57,$57,$57,$57,$57,$57,$57
+9565     .BYTE $D6,$D6,$D6,$D6,$D6,$D6,$D6,$FF
+9570     .BYTE $56,$56,$56,$56,$56,$56,$56,$FF
+9575     .BYTE $57,$57,$57,$57,$57,$57,$57,$FF
+9580     .BYTE $D5,$D5,$D5,$D5,$B5,$B5,$B5,$B5
+9585     .BYTE $AD,$AD,$AD,$AD,$AB,$AB,$AB,$AB
+9590     .BYTE $B5,$B5,$B5,$B5,$AD,$AD,$AD,$AD
+9595     .BYTE $EA,$EA,$EA,$EA,$7A,$7A,$7A,$7A
+9600     .BYTE $7A,$7A,$7A,$7A,$5E,$5E,$5E,$5E
+9605     .BYTE $5D,$5D,$5D,$5D,$57,$57,$57,$57
+9610     .BYTE $55,$55,$55,$55,$55,$55,$55,$55
+9615     .BYTE $D5,$D5,$D5,$D5,$75,$75,$75,$75
+9620     .BYTE $75,$75,$75,$75,$5D,$5D,$5D,$5D
+9625     .BYTE $5E,$5E,$5E,$5E,$57,$57,$57,$57
+9630     .BYTE $B0,$B0,$B0,$B0,$B0,$B0,$B0,$B0
+9635     .BYTE $5D,$5D,$5D,$5D,$57,$57,$57,$57
+010000 CHECKLVL
+010005   LDA LEVEL
+010010   CMP #1
+010015   BNE L2
+010020   LDA SPEEDCNTP2
+010025   CMP L1SPEED
+010030   BCC SKIPL1
+010035   LDA #1
+010040   STA SPEEDCNTP2
+010045   STA MVP2
+010050   RTS 
+010055 SKIPL1
+010060   LDA #0
+010065   STA MVP2
+010070   INC SPEEDCNTP2
+010075   RTS 
+010080 L2 CMP #2
+010085   BNE L3
+010090   LDA SPEEDCNTP2
+010095   CMP L2SPEED
+010100   BCC SPDPL2L2
+010105   LDA #1
+010110   STA SPEEDCNTP2
+010115   STA MVP2
+010120   JMP CHKPL2
+010125 SPDPL2L2
+010130   LDA #0
+010135   STA MVP2
+010140   INC SPEEDCNTP2
+010145 CHKPL2
+010150   LDA SPEEDCNTP3
+010155   CMP L2SPEED
+010160   BCC SPDPL3L2
+010165   LDA #1
+010170   STA SPEEDCNTP3
+010175   STA MVP3
+010180   RTS 
+010185 SPDPL3L2
+010190   LDA #0
+010195   STA MVP3
+010200   INC SPEEDCNTP3
+010205   RTS 
+010210 L3 CMP #3
+010215   BNE L4
+010220   LDA SPEEDCNTP2
+010225   CMP L3SPEED
+010230   BCC SPDPL2L3
+010235   LDA #1
+010240   STA SPEEDCNTP2
+010245   STA MVP2
+010250   JMP CHKPL3
+010255 SPDPL2L3
+010260   LDA #0
+010265   STA MVP2
+010270   INC SPEEDCNTP2
+010275 CHKPL3
+010280   LDA SPEEDCNTP3
+010285   CMP L3SPEED
+010290   BCC SPDPL3L3
+010295   LDA #1
+010300   STA SPEEDCNTP3
+010305   STA MVP3
+010310   RTS 
+010315 SPDPL3L3
+010320   LDA #0
+010325   STA MVP3
+010330   INC SPEEDCNTP3
+010335   RTS 
+010340 L4 CMP #4
+010345   BNE ENDLVL
+010350   LDA SPEEDCNTP2
+010355   CMP L4SPEED
+010360   BCC SPDPL2L4
+010365   LDA #1
+010370   STA SPEEDCNTP2
+010375   STA MVP2
+010380   JMP CHKPL4
+010385 SPDPL2L4
+010390   LDA #0
+010395   STA MVP2
+010400   INC SPEEDCNTP2
+010405 CHKPL4
+010410   LDA SPEEDCNTP3
+010415   CMP L4SPEED
+010420   BCC SPDPL3L4
+010425   LDA #1
+010430   STA SPEEDCNTP3
+010435   STA MVP3
+010440   RTS 
+010445 SPDPL3L4
+010450   LDA #0
+010455   STA MVP3
+010460   INC SPEEDCNTP3
+010465 ENDLVL
+010470   RTS 
+010500 PAUSEI
+010505   LDA CH      ; KEY PRESSED?
+010510   CMP #$FF
+010515   BEQ PI3
+010520   CMP #$0A    ; P KEY?
+010525   BNE PI3
+010530   LDA GAME
+010535   CMP #$01
+010540   BEQ PI1
+010545   LDA PAUSE
+010550   CMP #$01
+010555   BEQ PI1
+010560   LDA #$01    ; NOT PAUSED, PAUSE
+010565   STA PAUSE
+010570   LDA #$FF
+010575   STA CH
+010580   LDY #0
+010585 COPYLINE
+010590   LDA QG,Y
+010595   STA LINEBUF,Y
+010600   LDA GP,Y
+010605   STA QG,Y
+010610   INY 
+010615   CPY #40
+010620   BNE COPYLINE
+010625   JMP PI3
+010630 PI1 LDA #$00  ; PAUSED? RELEASE
+010635   STA PAUSE
+010640   LDA #$FF
+010645   STA CH
+010650   LDY #0
+010655 RESTORELINE
+010660   LDA LINEBUF,Y
+010665   STA QG,Y
+010670   INY 
+010675   CPY #40
+010680   BNE RESTORELINE
+010685 PI3 RTS 
+010700 COLLISION
+010705   LDA KILL0
+010710   CMP #$00
+010715   BEQ CD1
+010720   JSR TEST0
+010725 ; RTS
+010730 CD1 LDA KILL2
+010735   CMP #$00
+010740   BEQ CD2
+010745   JSR TEST2
+010750 CD2 LDA KILL3
+010755   CMP #$00
+010760   BEQ NC
+010765   JSR TEST3
+010770 NC LDA P0PL
+010775   CMP #4
+010780   BNE CD3
+010781   LDA KILL2
+010782   CMP #0
+010783   BNE CD3
+010785   JSR REMOVE0
+010790 CD3 LDA P0PL
+010795   CMP #8
+010800   BNE CD4
+010801   LDA KILL3
+010802   CMP #0
+010803   BNE CD4
+010805   JSR REMOVE0
+010810 CD4 LDA M0PL
+010815   CMP #4
+010820   BNE CD5
+010821   LDA IGNORE2
+010822   CMP #1
+010823   BEQ CD5
+010825   JSR REMOVE2
+010830 CD5 LDA M0PL
+010835   CMP #8
+010840   BNE CD6
+010841   LDA IGNORE3
+010842   CMP #1
+010843   BEQ CD6
+010845   JSR REMOVE3
+010850 CD6 LDA M2PL
+010855   CMP #1
+010860   BNE CD7
+010865   JSR REMOVE0
+010870 CD7 LDA M3PL
+010875   CMP #1
+010880   BNE CD8
+010885   JSR REMOVE0
+010890 CD8
+010895   STA HITCLR
+010900   RTS 
+010905 REMOVE0
+010907   LDA #64
+010908   STA SBANG
+010910   LDA #1
+010915   STA EXCOUNT0
+010920   STA EXCOUNT
+010925   STA KILL0
+010930   CLC 
+010935   LDA REMBAS+1
+010940   ADC #2
+010945   STA PLBOFS+1
+010950   LDA #0
+010955   STA PLBOFS
+010960   LDX #0
+010965 RM0
+010970   STX SHPNUMBER
+010975   JSR EXPLODE
+010980   JSR INCPM
+010985   INX 
+010990   CPX #2
+010995   BCC RM0
+011000 RM1
+011005   LDY SHPINDEX,X
+011010   JSR RESETPLPOSEX
+011015   JSR INCPM
+011020   INX 
+011025   CPX #4
+011030   BCC RM1
+011035   LDY SHPINDEX,X
+011040   LDA MASK0
+011045   STA MASK
+011050   JSR MLADR
+011055   JSR GETPM
+011060   JSR RESETMLPOS
+011065   LDX #6
+011070   LDY SHPINDEX,X
+011075   LDA MASK2
+011080   STA MASK
+011085   JSR GETPM
+011090   JSR RESETMLPOS
+011095   LDX #7
+011100   LDY SHPINDEX,X
+011105   LDA MASK3
+011110   STA MASK
+011115   JSR GETPM
+011120   JSR RESETMLPOS
+011125   RTS 
+011130 REMOVE2
+011132   LDA #64
+011133   STA SBANG
+011135   LDA #1
+011136   STA IGNORE2
+011140   STA EXCOUNT2
+011145   STA EXCOUNT4
+011150   STA KILL2
+011155   CLC 
+011160   LDA REMBAS+1
+011165   ADC #3
+011170   STA PLBOFS+1
+011175   LDA #0
+011180   STA PLBOFS
+011185   LDA #2
+011190   STA SHPNUMBER
+011195   JSR EXPLODE
+011200   JSR SCORE
+011205   LDX #4
+011210   LDY SHPINDEX,X
+011215   LDA MASK0
+011220   STA MASK
+011225   JSR GETPM
+011230   JSR RESETMLPOS
+011235   RTS 
+011240 REMOVE3
+011242   LDA #64
+011243   STA SBANG
+011245   LDA #1
+011246   STA IGNORE3
+011250   STA EXCOUNT3
+011255   STA EXCOUNT1
+011260   STA KILL3
+011265   CLC 
+011270   LDA REMBAS+1
+011275   ADC #3
+011280   STA PLBOFS+1
+011285   LDA #128
+011290   STA PLBOFS
+011295   LDA #3
+011300   STA SHPNUMBER
+011305   JSR EXPLODE
+011310   JSR SCORE
+011315   LDX #4
+011320   LDY SHPINDEX,X
+011325   LDA MASK0
+011330   STA MASK
+011335   JSR GETPM
+011340   JSR RESETMLPOS
+011345   RTS 
+011350 TEST0
+011355   CLC 
+011360   LDA REMBAS+1
+011365   ADC #2
+011370   STA PLBOFS+1
+011375   LDA #0
+011380   STA PLBOFS
+011385   LDA EXCOUNT0
+011390   CMP #64
+011395   BCC EX1
+011400   LDA #0
+011405   STA EXCOUNT0
+011410   INC EXCOUNT
+011415   LDA EXCOUNT
+011420   CMP #4
+011425   BCC EX0
+011430   LDX #0
+011435 EX
+011440   LDY SHPINDEX,X
+011445   JSR RESETPLPOSEX
+011450   JSR INCPM
+011455   INX 
+011460   CPX #2
+011465   BCC EX
+011470   DEC LIVES
+011475   LDA LIVES
+011480   CLC 
+011485   ADC #16
+011490   STA SCL+13
+011495   LDA #0
+011500   STA KILL0
+011501   STA AUDC1
+011502   STA AUDC2
+011503   STA SBANG
+011505   LDA #1
+011510   STA RESETLVL
+011515   RTS 
+011520 EX0
+011525   LDX #0
+011530   STX SHPNUMBER
+011535   JSR EXPLODE
+011540   JSR INCPM
+011545   LDX #1
+011550   STX SHPNUMBER
+011555   JSR EXPLODE
+011560 EX1
+011561   LDA SBANG
+011562   CMP #0
+011563   BEQ T0
+011564   JSR DOSOUND
+011568 T0
+011569   INC EXCOUNT0
+011570   RTS 
+011575 TEST2
+011580   CLC 
+011585   LDA REMBAS+1
+011590   ADC #3
+011595   STA PLBOFS+1
+011600   LDA #0
+011605   STA PLBOFS
+011610   LDA EXCOUNT2
+011615   CMP #48
+011620   BCC EX3
+011625   LDA #0
+011630   STA EXCOUNT2
+011635   INC EXCOUNT4
+011640   LDA EXCOUNT4
+011645   CMP #6
+011650   BCC EX2
+011655   LDX #2
+011660   LDY SHPINDEX,X
+011665   JSR RESETPLPOSEX
+011670   LDA #0
+011671   STA AUDC1
+011672   STA AUDC2
+011673   STA IGNORE2
+011674   STA SBANG
+011675   STA KILL2
+011677   STA M2FLAG
+011680   RTS 
+011685 EX2
+011690   LDA #2
+011695   STA SHPNUMBER
+011700   JSR EXPLODE
+011705 EX3
+011706   LDA SBANG
+011707   CMP #0
+011708   BEQ T2
+011709   JSR DOSOUND
+011710 T2
+011711   INC EXCOUNT2
+011715   RTS 
+011720 TEST3
+011725   CLC 
+011730   LDA REMBAS+1
+011735   ADC #3
+011740   STA PLBOFS+1
+011745   LDA #128
+011750   STA PLBOFS
+011755   LDA EXCOUNT3
+011760   CMP #48
+011765   BCC EX5
+011770   LDA #0
+011775   STA EXCOUNT3
+011780   INC EXCOUNT1
+011785   LDA EXCOUNT1
+011790   CMP #6
+011795   BCC EX4
+011800   LDX #3
+011805   LDY SHPINDEX,X
+011810   JSR RESETPLPOSEX
+011815   LDA #0
+011816   STA SBANG
+011817   STA IGNORE3
+011818   STA AUDC1
+011819   STA AUDC2
+011820   STA KILL3
+011822   STA M3FLAG
+011825   RTS 
+011830 EX4
+011835   LDA #3
+011840   STA SHPNUMBER
+011845   JSR EXPLODE
+011850 EX5
+011851   LDA SBANG
+011852   CMP #0
+011853   BEQ T3
+011854   JSR DOSOUND
+011855 T3
+011856   INC EXCOUNT3
+011860   RTS 
+011865 RESETPLPOSEX
+011866   JSR PMADR
+011867   JSR GETPM
+011868   STX TEMP
+011869   JSR BLKFIL
+011870   LDX TEMP
+011871   LDA VPOSITION,X
+011875   STA Y0,X
+011880   LDA HPOSITION,X
+011885   STA X0,X
+011890   STA HPOSP0,X
+011915   JSR DRAWPL
+011920   RTS 
+011925 EXPLODE
+011930   JSR PMADR
+011935   LDX SHPNUMBER
+011940   LDY SHPINDEX,X
+011945   JSR GETPM
+011950   CLC 
+011955   LDA TABPTR
+011960   ADC VRTPTR
+011965   STA TABPTR
+011970   LDY #0
+011975 EX6
+011980   LDA (SHAPE),Y
+011985   EOR DEREZ,Y
+011995   STA (TABPTR),Y
+011996   AND DEREZ,Y
+011997   ORA DEREZ,Y
+011998   STA DEREZ,Y
+012000   INY 
+012005   CPY LENGTH
+012010   BCC EX6
+012020   RTS 
+012025 SCORE
+012030   LDA LEVEL
+012035   CMP #1
+012040   BNE SCL2
+012045   INC SCORE0
+012050   LDA SCORE0
+012055   CMP #10
+012060   BCC SC1
+012065   INC SCORE1
+012070   LDA #0
+012075   STA SCORE0
+012080 SC1 LDA SCORE1
+012085   CLC 
+012090   ADC #16
+012095   STA SCL+36
+012100   LDA SCORE0
+012105   CLC 
+012110   ADC #16
+012115   STA SCL+37
+012120   RTS 
+012125 SCL2
+012130   CMP #2
+012135   BNE SCL3
+012140   INC SCORE0
+012145   INC SCORE0
+012150   LDA SCORE0
+012155   CMP #10
+012160   BCC SC2
+012165   INC SCORE1
+012170   LDA #0
+012175   STA SCORE0
+012180   LDA SCORE1
+012185   CMP #10
+012190   BCC SC2
+012195   INC SCORE2
+012200   LDA #0
+012205   STA SCORE1
+012210 SC2 LDA SCORE2
+012215   CLC 
+012220   ADC #16
+012225   STA SCL+35
+012230   LDA SCORE1
+012235   CLC 
+012240   ADC #16
+012245   STA SCL+36
+012250   LDA SCORE0
+012255   CLC 
+012260   ADC #16
+012265   STA SCL+37
+012270   RTS 
+012275 SCL3
+012280   CMP #2
+012285   BNE SCL4
+012290   INC SCORE0
+012295   INC SCORE0
+012300   INC SCORE0
+012305   LDA SCORE0
+012310   CMP #10
+012315   BCC SC3
+012320   INC SCORE1
+012325   LDA #0
+012330   STA SCORE0
+012335   LDA SCORE1
+012340   CMP #10
+012345   BCC SC3
+012350   INC SCORE2
+012355   LDA #0
+012360   STA SCORE1
+012365 SC3 LDA SCORE2
+012370   CLC 
+012375   ADC #16
+012380   STA SCL+35
+012385   LDA SCORE1
+012390   CLC 
+012395   ADC #16
+012400   STA SCL+36
+012405   LDA SCORE0
+012410   CLC 
+012415   ADC #16
+012420   STA SCL+37
+012425   RTS 
+012430 SCL4
+012435   INC SCORE0
+012440   INC SCORE0
+012445   INC SCORE0
+012450   INC SCORE0
+012455   LDA SCORE0
+012460   CMP #10
+012465   BCC SC4
+012470   INC SCORE1
+012475   LDA #0
+012480   STA SCORE0
+012485   LDA SCORE1
+012490   CMP #10
+012495   BCC SC4
+012500   INC SCORE2
+012505   LDA #0
+012510   STA SCORE1
+012515 SC4 LDA SCORE2
+012520   CLC 
+012525   ADC #16
+012530   STA SCL+35
+012535   LDA SCORE1
+012540   CLC 
+012545   ADC #16
+012550   STA SCL+36
+012555   LDA SCORE0
+012560   CLC 
+012565   ADC #16
+012570   STA SCL+37
+012575   RTS 
+012580 DOSOUND
+012585   DEC SBANG
+012590   LDA SBANG
+012595   LSR A
+012600   LSR A
+012605   ORA #$E0
+012610   STA AUDF1
+012615   STA AUDF2
+012620   AND #$0F
+012625   STA AUDC1
+012630   ORA #$80
+012640   STA AUDC2
+012645   RTS 
+013010   .END 
